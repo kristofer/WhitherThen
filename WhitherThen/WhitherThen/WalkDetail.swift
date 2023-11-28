@@ -9,93 +9,45 @@ import SwiftUI
 import MapKit
 import CoreLocation
 
-// , CLLocationManagerDelegate, MKMapViewDelegate
-
-final class WalkDetailVM: NSObject, ObservableObject, CLLocationManagerDelegate {
-
-    var walk: Walk
-    var locMgr = CLLocationManager()
-    @Published var isTracking: Bool
-    
-    init(walk: Walk) {
-        self.walk = walk
-        self.isTracking = false
-        super.init()
-
-        self.locMgr.delegate = self
-        self.locMgr.activityType = .fitness
-        self.locMgr.desiredAccuracy = kCLLocationAccuracyBest
-        
-        self.locMgr.requestAlwaysAuthorization()
-        
-
-    }
-    
-    func startWalk() {
-        if isTracking {
-            locMgr.stopUpdatingLocation()
-            walk.stopstamp = Date()
-            isTracking = false
-        } else {
-            locMgr.startUpdatingLocation()
-            walk.startstamp = Date()
-            isTracking = true
-        }
-        
-        //isTracking.toggle()
-
-    }
-    func stopWalk() {
-        //saveContext()
-    }
-    func locationManager(manager: CLLocationManager!, didUpdateLocations locations: [AnyObject]!) {
-            for location in locations {
-                if let newLocation = location as? CLLocation {
-                    if newLocation.horizontalAccuracy > 0 {
-                        // Only set the location on and region on the first try
-                        // This may change in the future
-                        if walk.waypoints.count <= 0 {
-                            //mapView.setCenterCoordinate(newLocation.coordinate, animated: true)
-                            
-//                            let region = MKCoordinateRegionMakeWithDistance(newLocation.coordinate, 1000, 1000)
-//                            mapView.setRegion(region, animated: true)
-                        }
-                        let waypoints = walk.waypoints as [Waypoint]
-                        if let oldWaypoint = waypoints.last {
-                            let oldLoc = oldWaypoint.makeLocation()
-                            let delta: Double = newLocation.distance(from: oldLoc)
-                            walk.addDistance(delta)
-                        }
-                        
-                        walk.addNewLocation(newLocation)
-                        print("adding a location")
-                    }
-                }
-            }
-            //updateDisplay()
-    }
-
-    func weLive() -> Bool {
-        return self.isTracking
-    }
-
-}
-
 struct WalkDetail: View {
     @ObservedObject var walk: Walk
-    var vm: WalkDetailVM
-    
+    @StateObject var locationDataManager = LocationDataManager()
+
     init(walk: Walk) {
         self.walk = walk
-        self.vm = WalkDetailVM(walk: walk)
     }
     
     var body: some View {
-        Button("Start", action: {vm.startWalk()})
-        Button("Stop", action: {vm.stopWalk()})
-        
-        Text("Walk at \(walk.startstamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-        Text("Walking? " + String(vm.isTracking))
+            
+        VStack {
+            switch locationDataManager.locationManager.authorizationStatus {
+            case .authorizedWhenInUse:  // Location services are available.
+                HStack {
+                    Button("Start", action: {locationDataManager.startCollecting(walk)})
+                        .buttonStyle(.bordered)
+                        .tint(.green)
+                    Spacer()
+                    Button("Stop", action: {locationDataManager.stopCollecting(walk)})
+                        .buttonStyle(.bordered)
+                        .tint(.red)
+                }
+                .padding()
+                // Insert code here of what should happen when Location services are authorized
+                Text("Your current location is:")
+                Text("Latitude: \(locationDataManager.locationManager.location?.coordinate.latitude.description ?? "Error loading")")
+                Text("Longitude: \(locationDataManager.locationManager.location?.coordinate.longitude.description ?? "Error loading")")
+                Map(coordinateRegion: locationDataManager.region)
+                            .frame(width: 400, height: 300)
+            case .restricted, .denied:  // Location services currently unavailable.
+                // Insert code here of what should happen when Location services are NOT authorized
+                Text("Current location data was restricted or denied.")
+            case .notDetermined:        // Authorization not determined yet.
+                Text("Finding your location...")
+                ProgressView()
+            default:
+                ProgressView()
+            }
+        }
     }
     
 
