@@ -16,17 +16,20 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
     @Published var authorizationStatus: CLAuthorizationStatus?
     @Published var walk: Walk?
     @Published var errorAlertString: String?
+    @Published var route: MKPolyline?
     var region: MKCoordinateRegion = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 36.00,
-                                       longitude: -78.9),
-        latitudinalMeters: 1000,
-        longitudinalMeters: 1000
+        center: CLLocationCoordinate2D(latitude: 36.97,
+                                       longitude: -78.99),
+        latitudinalMeters: 500,
+        longitudinalMeters: 500
     )
 
     
     override init() {
         super.init()
         locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.distanceFilter = 15;
     }
     
     func setWalk(_ walkToChange: Walk) {
@@ -60,13 +63,16 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
         self.locationManager.startUpdatingLocation()
     }
     func stopCollecting(_ walk: Walk) {
-        self.walk = walk
+        //self.walk = walk
         self.locationManager.stopUpdatingLocation()
         walk.stopstamp = Date()
         
         
     }
-    
+    func update() {
+        _ = self.polyLine()
+        self.region = self.mapRegion(walk: self.walk!)
+    }
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         // RELIES on self.walk to be set...
         if let walk = self.walk {
@@ -95,7 +101,7 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
     }
     
     func setMapRegionOnce(_ loc: CLLocation ) {
-        self.region = MKCoordinateRegion(center: loc.coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
+        self.region = MKCoordinateRegion(center: loc.coordinate, latitudinalMeters: 500, longitudinalMeters: 500)
         
         // Only set the location on and region on the first try
         // This may change in the future
@@ -108,21 +114,28 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
     
     func polyLine() -> MKPolyline {
         if let walk = self.walk {
-            var coordinates = walk.waypoints.map({ (loc: Waypoint) ->
-                CLLocationCoordinate2D in
-                let location = loc.makeLocation()
-
-                return location.coordinate
-            })
-            
-            return MKPolyline(coordinates: &coordinates, count: walk.waypoints.count)
+//            var coordinates = walk.waypoints.map({ (loc: Waypoint) ->
+//                CLLocationCoordinate2D in
+//                let location = loc.makeLocation()
+//
+//                return location.coordinate
+//            })
+            var coordinates: [CLLocationCoordinate2D] = []
+            for waypt in walk.waypoints {
+                let coord = waypt.makeLocation().coordinate
+                coordinates.append(coord)
+            }
+            print("making polyline \(walk.waypoints.count) pts")
+            route = MKPolyline(coordinates: &coordinates, count: coordinates.count)
+            return route!
         }
-        return MKPolyline()
+        route = MKPolyline()
+        return route!
     }
     
     // This feels like it could definitely live somewhere else
     // I am not sure yet where this function lives
-    func mapRegion(walk: Walk) -> MKCoordinateRegion? {
+    func mapRegion(walk: Walk) -> MKCoordinateRegion {
         if let startLoc = walk.waypoints.first {
             let startLocation = startLoc.makeLocation()
             var minLatitude = startLocation.coordinate.latitude
@@ -158,7 +171,12 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
         
             return MKCoordinateRegion(center: center, span: span)
         }
-        return nil
+        return MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 36.97,
+                                           longitude: -78.99),
+            latitudinalMeters: 500,
+            longitudinalMeters: 500
+        )
     }
     
     func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer! {
@@ -191,10 +209,13 @@ struct WhitherThenApp: App {
         }
     }()
     
+    @StateObject var locationDataManager = LocationDataManager()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
         .modelContainer(sharedModelContainer)
+        .environmentObject(locationDataManager)
     }
 }

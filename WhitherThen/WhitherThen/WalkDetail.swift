@@ -11,7 +11,7 @@ import CoreLocation
 
 struct WalkDetail: View {
     @ObservedObject var walk: Walk
-    @StateObject var locationDataManager = LocationDataManager()
+    @EnvironmentObject var locationDataManager: LocationDataManager
 
     init(walk: Walk) {
         self.walk = walk
@@ -28,6 +28,9 @@ struct WalkDetail: View {
                         .tint(.green)
                     Text("Pts: \(walk.waypoints.count)")
                     Spacer()
+                    Button("Draw", action: {locationDataManager.polyLine()})
+                        .buttonStyle(.bordered)
+                        .tint(.gray)
                     Button("Stop", action: {locationDataManager.stopCollecting(walk)})
                         .buttonStyle(.bordered)
                         .tint(.red)
@@ -37,9 +40,10 @@ struct WalkDetail: View {
                 Text("Your current location is:")
                 Text("Latitude: \(locationDataManager.locationManager.location?.coordinate.latitude.description ?? "Error loading")")
                 Text("Longitude: \(locationDataManager.locationManager.location?.coordinate.longitude.description ?? "Error loading")")
+                Text("Distance (m) \(walk.distance) \(walk.duration)")
                 Map() {
-                    MapPolyline(locationDataManager.polyLine())
-                    .stroke(.blue, lineWidth: 8)
+                    MapPolyline(locationDataManager.route ?? MKPolyline())
+                    .stroke(.blue, lineWidth: 4)
                 }
                 .mapControls {
                             MapUserLocationButton()
@@ -55,6 +59,9 @@ struct WalkDetail: View {
             default:
                 ProgressView()
             }
+        }
+        .onAppear(){
+            locationDataManager.polyLine()
         }
     }
     
