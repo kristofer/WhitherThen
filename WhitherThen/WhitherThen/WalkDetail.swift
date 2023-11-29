@@ -12,13 +12,13 @@ import CoreLocation
 struct WalkDetail: View {
     @ObservedObject var walk: Walk
     @EnvironmentObject var locationDataManager: LocationDataManager
-
+    
     init(walk: Walk) {
         self.walk = walk
     }
     
     var body: some View {
-            
+        
         VStack {
             switch locationDataManager.locationManager.authorizationStatus {
             case .authorizedWhenInUse:  // Location services are available.
@@ -28,7 +28,7 @@ struct WalkDetail: View {
                         .tint(.green)
                     Text("Pts: \(walk.waypoints.count)")
                     Spacer()
-                    Button("Draw", action: {locationDataManager.polyLine()})
+                    Button("Draw", action: {locationDataManager.update(walk)})
                         .buttonStyle(.bordered)
                         .tint(.gray)
                     Button("Stop", action: {locationDataManager.stopCollecting(walk)})
@@ -43,13 +43,13 @@ struct WalkDetail: View {
                 Text("Distance (m) \(walk.distance) \(walk.duration)")
                 Map() {
                     MapPolyline(locationDataManager.route ?? MKPolyline())
-                    .stroke(.blue, lineWidth: 4)
+                        .stroke(.blue, lineWidth: 4)
                 }
                 .mapControls {
-                            MapUserLocationButton()
-                        }
-
-                            .frame(width: 400, height: 300)
+                    MapUserLocationButton()
+                }
+                
+                .frame(width: 400, height: 300)
             case .restricted, .denied:  // Location services currently unavailable.
                 // Insert code here of what should happen when Location services are NOT authorized
                 Text("Current location data was restricted or denied.")
@@ -61,22 +61,10 @@ struct WalkDetail: View {
             }
         }
         .onAppear(){
-            locationDataManager.polyLine()
+            locationDataManager.update(walk)
         }
     }
     
-//    func updateDisplay() {
-//        if let walk = self.walk {
-//            if let region = self.mapRegion(walk) {
-//                mapView.setRegion(region, animated: true)
-//            }
-//        }
-//        
-//        mapView.removeOverlays(mapView.overlays)
-//        mapView.addOverlay(polyLine())
-//    }
-
-
 }
 
 #Preview {

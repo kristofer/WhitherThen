@@ -31,11 +31,7 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.distanceFilter = 15;
     }
-    
-    func setWalk(_ walkToChange: Walk) {
-        self.walk = walkToChange
-    }
-    
+        
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         switch manager.authorizationStatus {
         case .authorizedWhenInUse:  // Location services are available.
@@ -61,6 +57,8 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
     func startCollecting(_ walk: Walk) {
         self.walk = walk
         self.locationManager.startUpdatingLocation()
+//         locationManager.allowsBackgroundLocationUpdates = true
+//        locationManager.showsBackgroundLocationIndicator = true
     }
     func stopCollecting(_ walk: Walk) {
         //self.walk = walk
@@ -69,13 +67,17 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
         
         
     }
-    func update() {
+    func update(_ walk: Walk) {
+        if self.walk != walk {
+            self.walk = walk
+        }
         _ = self.polyLine()
-        self.region = self.mapRegion(walk: self.walk!)
+        self.region = self.mapRegion(walk: walk)
     }
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         // RELIES on self.walk to be set...
         if let walk = self.walk {
+            print("how many is \(locations.count)")
             for location in locations {
                 if let newLocation = location as? CLLocation {
                     if newLocation.horizontalAccuracy > 0 {
@@ -83,11 +85,15 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
                         if let oldWaypoint = waypoints.last {
                             let oldLoc = oldWaypoint.makeLocation()
                             let delta: Double = newLocation.distance(from: oldLoc)
-                            walk.addDistance(delta)
+                            if delta > 3.0 {
+                                walk.addDistance(delta)
+                                walk.addNewLocation(newLocation)
+                                print("adding a location")
+                            } else {
+                                print("DELTA: \(delta)")
+                            }
                         }
                         
-                        walk.addNewLocation(newLocation)
-                        print("adding a location")
                     }
                 }
             }
