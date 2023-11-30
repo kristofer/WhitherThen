@@ -9,27 +9,36 @@ import SwiftUI
 import SwiftData
 import CoreLocation
 import MapKit
+import CoreMotion
 
 @MainActor
 class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegate {
     var locationManager = CLLocationManager()
     @Published var authorizationStatus: CLAuthorizationStatus?
     @Published var walk: Walk?
+    @Published var walking: Bool = false
+    @Published var points: Int = 0
+
     @Published var errorAlertString: String?
     @Published var route: MKPolyline?
-    var region: MKCoordinateRegion = MKCoordinateRegion(
+    @Published var region: MKCoordinateRegion = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 36.97,
                                        longitude: -78.99),
         latitudinalMeters: 500,
         longitudinalMeters: 500
     )
+    
+    /// Provides to create an instance of the CMMotionActivityManager.
+    private let activityManager = CMMotionActivityManager()
+    /// Provides to create an instance of the CMPedometer.
+    private let pedometer = CMPedometer()
 
     
     override init() {
         super.init()
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.distanceFilter = 15;
+        //locationManager.distanceFilter = 15;
     }
         
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
@@ -56,15 +65,28 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
     
     func startCollecting(_ walk: Walk) {
         self.walk = walk
+        self.walking = true
+        self.points = 0
         self.locationManager.startUpdatingLocation()
 //         locationManager.allowsBackgroundLocationUpdates = true
 //        locationManager.showsBackgroundLocationIndicator = true
+        if CMPedometer.isStepCountingAvailable() {
+            pedometer.startUpdates(from: Date()) { pedometerData, error in
+                guard let pedometerData = pedometerData, error == nil else { return }
+                DispatchQueue.main.async {
+                    walk.addSteps(pedometerData.numberOfSteps.intValue)
+                }
+            }
+        }
     }
     func stopCollecting(_ walk: Walk) {
         //self.walk = walk
+        self.walking = false
         self.locationManager.stopUpdatingLocation()
         walk.stopstamp = Date()
-        
+        if CMPedometer.isStepCountingAvailable() {
+            pedometer.stopUpdates()
+        }
         
     }
     func update(_ walk: Walk) {
@@ -74,30 +96,45 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
         _ = self.polyLine()
         self.region = self.mapRegion(walk: walk)
     }
+    
+    func locString(loc: CLLocation) -> String {
+        return String(format: "lat %.6f", loc.coordinate.latitude)
+        + " - "
+        + String(format: "lon %.6f", loc.coordinate.longitude)
+    }
+    
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         // RELIES on self.walk to be set...
         if let walk = self.walk {
-            print("how many is \(locations.count)")
+            print("how many waypoints: \(locations.count)")
             for location in locations {
                 if let newLocation = location as? CLLocation {
+                    self.points += 1
+                    if walk.waypoints.isEmpty {
+                        walk.waypoints.append(Waypoint(loc: newLocation))
+                    }
                     if newLocation.horizontalAccuracy > 0 {
-                        let waypoints = walk.waypoints as [Waypoint]
+                        self.errorAlertString = locString(loc: newLocation)
+                        let waypoints = walk.waypoints.sorted { $0.timestamp < $1.timestamp } as [Waypoint]
+                        print("waypoints: \(waypoints.count)")
                         if let oldWaypoint = waypoints.last {
                             let oldLoc = oldWaypoint.makeLocation()
                             let delta: Double = newLocation.distance(from: oldLoc)
+                            print("DELTA: \(delta)")
                             if delta > 3.0 {
                                 walk.addDistance(delta)
                                 walk.addNewLocation(newLocation)
-                                print("adding a location")
+                                self.errorAlertString?.append(" adding a location ∆ \(delta)")
                             } else {
-                                print("DELTA: \(delta)")
+                                self.errorAlertString = " IGNORING a location ∆ \(delta)"
                             }
+                        
                         }
                         
                     }
                 }
             }
-            //updateDisplay()
+            self.update(walk)
         }
     }
     
@@ -106,32 +143,27 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
         print(self.errorAlertString ?? "location manager did fail...")
     }
     
-    func setMapRegionOnce(_ loc: CLLocation ) {
-        self.region = MKCoordinateRegion(center: loc.coordinate, latitudinalMeters: 500, longitudinalMeters: 500)
-        
-        // Only set the location on and region on the first try
-        // This may change in the future
-        //        if walk.waypoints.count <= 0 {
-        //            //mapView.setCenterCoordinate(newLocation.coordinate, animated: true)
-        //            // mapView.setRegion(region, animated: true)
-        //        }
-        
-    }
+//    func setMapRegionOnce(_ loc: CLLocation ) {
+//        self.region = MKCoordinateRegion(center: loc.coordinate, latitudinalMeters: 500, longitudinalMeters: 500)
+//        
+//        // Only set the location on and region on the first try
+//        // This may change in the future
+//        //        if walk.waypoints.count <= 0 {
+//        //            //mapView.setCenterCoordinate(newLocation.coordinate, animated: true)
+//        //            // mapView.setRegion(region, animated: true)
+//        //        }
+//        
+//    }
     
     func polyLine() -> MKPolyline {
         if let walk = self.walk {
-//            var coordinates = walk.waypoints.map({ (loc: Waypoint) ->
-//                CLLocationCoordinate2D in
-//                let location = loc.makeLocation()
-//
-//                return location.coordinate
-//            })
             var coordinates: [CLLocationCoordinate2D] = []
-            for waypt in walk.waypoints {
+            let sortedwaypts = walk.waypoints.sorted { $0.timestamp > $1.timestamp }
+            for waypt in sortedwaypts {
                 let coord = waypt.makeLocation().coordinate
                 coordinates.append(coord)
             }
-            print("making polyline \(walk.waypoints.count) pts")
+            //print("making polyline \(walk.waypoints.count) pts")
             route = MKPolyline(coordinates: &coordinates, count: coordinates.count)
             return route!
         }
@@ -180,20 +212,20 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
         return MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 36.97,
                                            longitude: -78.99),
-            latitudinalMeters: 500,
-            longitudinalMeters: 500
+            latitudinalMeters: 100,
+            longitudinalMeters: 100
         )
     }
     
-    func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer! {
-        if let polyLine = overlay as? MKPolyline {
-            let renderer = MKPolylineRenderer(polyline: polyLine)
-            renderer.strokeColor = UIColor(hue:0.88, saturation:0.46, brightness:0.73, alpha:0.75)
-            renderer.lineWidth = 6
-            return renderer
-        }
-        return nil
-    }
+//    func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer! {
+//        if let polyLine = overlay as? MKPolyline {
+//            let renderer = MKPolylineRenderer(polyline: polyLine)
+//            renderer.strokeColor = UIColor(hue:0.88, saturation:0.46, brightness:0.73, alpha:0.75)
+//            renderer.lineWidth = 6
+//            return renderer
+//        }
+//        return nil
+//    }
     
     
 }
