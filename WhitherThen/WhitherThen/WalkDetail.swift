@@ -46,7 +46,8 @@ struct WalkDetail: View {
                 Text("Your current location is:")
 //                Text("Latitude: \(locationDataManager.locationManager.location?.coordinate.latitude.description ?? "Error loading")")
 //                Text("Longitude: \(locationDataManager.locationManager.location?.coordinate.longitude.description ?? "Error loading")")
-                //Text("Distance (m) \(walk.distance) \(walk.duration)")
+                Text(locationDataManager.lastLocationString())
+                Text("Distance (m) \(walk.distance) Time \(walk.duration)")
                 Text("Steps (m) \(walk.steps) Points: \(locationDataManager.points)")
                 Text(locationDataManager.errorAlertString ?? "no msg")
 
