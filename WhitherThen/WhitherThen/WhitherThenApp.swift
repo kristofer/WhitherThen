@@ -111,6 +111,27 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
         }
     }
     
+    func filterLocation(_ location: CLLocation) -> Bool{
+        let age = -location.timestamp.timeIntervalSinceNow
+        
+        if age > 10{
+            return false
+        }
+        
+        if location.horizontalAccuracy < 0{
+            return false
+        }
+        
+        if location.horizontalAccuracy > 30{
+            return false
+        }
+        
+        //locationDataArray.append(location)
+        
+        return true
+        
+    }
+
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         // RELIES on self.walk to be set...
         if let walk = self.walk {
@@ -121,21 +142,21 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
                     if walk.waypoints.isEmpty {
                         walk.waypoints.append(Waypoint(loc: newLocation))
                     }
-                    if newLocation.horizontalAccuracy > 0 {
+                    if filterLocation(newLocation) {
                         self.errorAlertString = locString(loc: newLocation)
                         let waypoints = walk.waypoints.sorted { $0.timestamp < $1.timestamp } as [Waypoint]
                         print("waypoints: \(waypoints.count)")
                         if let oldWaypoint = waypoints.last {
                             let oldLoc = oldWaypoint.makeLocation()
                             let delta: Double = newLocation.distance(from: oldLoc)
-                            print("DELTA: \(delta)")
+                            //print("DELTA: \(delta)")
                             if delta > 3.0 {
                                 walk.addDistance(delta)
                                 walk.addNewLocation(newLocation)
                                 self.lastLocation = newLocation
-                                self.errorAlertString?.append(" adding a location ∆ \(delta)")
+                                self.errorAlertString?.append(" add ∆ \(delta)")
                             } else {
-                                self.errorAlertString = " IGNORING a location ∆ \(delta)"
+                                self.errorAlertString = " IGNORE ∆ \(delta)"
                             }
                             
                         }

@@ -13,33 +13,80 @@ struct WalkDetail: View {
     @ObservedObject var walk: Walk
     @EnvironmentObject var locationDataManager: LocationDataManager
     @Environment(\.modelContext) private var context
-    
+    @State private var isWalking = false
+
+    let walkDateFormat = Date.FormatStyle()
+        .locale(Locale(identifier: "en_US"))
+        .weekday(.abbreviated)
+        .month(.abbreviated)
+        .year()
+        .day(.defaultDigits)
+        .hour().minute()
+
     init(walk: Walk) {
         self.walk = walk
     }
     
+    struct CheckToggleStyle: ToggleStyle {
+        func makeBody(configuration: Configuration) -> some View {
+            Button {
+                configuration.isOn.toggle()
+            } label: {
+                Label {
+                    if configuration.isOn {
+                        Text("Walking")
+                    } else {
+                        Text("Not Walking")
+                    }
+                } icon: {
+                    Image(systemName: configuration.isOn ? "figure.walk.circle.fill" : "figure.walk.circle")
+                        .foregroundStyle(configuration.isOn ? Color.accentColor : .primary)
+                        //.accessibility(label: Text(configuration.isOn ? "Walking" : "Not Walking"))
+                        .imageScale(.large)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(configuration.isOn ? .green : .red)
+
+        }
+    }
     var body: some View {
         
         VStack {
             switch locationDataManager.locationManager.authorizationStatus {
             case .authorizedWhenInUse:  // Location services are available.
+                Text("\(walk.startstamp, format:  walkDateFormat)")
+                    .font(.title3)
                 HStack {
-                    Button("Start", action: {locationDataManager.startCollecting(walk)})
-                        .buttonStyle(.bordered)
-                        .tint(.green)
-                    Text("Pts: \(walk.waypoints.count) Walking: \(locationDataManager.walking)" as String)
-                    Spacer()
-                    Button("Draw", action: {locationDataManager.update(walk)})
-                        .buttonStyle(.bordered)
-                        .tint(.gray)
-                    Button("Stop", action: {
-                        locationDataManager.stopCollecting(walk)
-                        if context.hasChanges {
-                            try? context.save()
+                    Toggle("Walk", isOn: $isWalking)
+                        .onChange(of: isWalking) { value in
+                            if value {
+                                locationDataManager.startCollecting(walk)
+                            } else {
+                                locationDataManager.stopCollecting(walk)
+                                if context.hasChanges {
+                                    try? context.save()
+                                }
+                            }
                         }
-                    })
-                        .buttonStyle(.bordered)
-                        .tint(.red)
+                        .toggleStyle(CheckToggleStyle())
+//                    Button("Start", action: {locationDataManager.startCollecting(walk)})
+//                        .buttonStyle(.bordered)
+//                        .tint(.green)
+//                    Text("Pts: \(walk.waypoints.count) Walking: \(locationDataManager.walking)" as String)
+//                    Spacer()
+//                    Button("Draw", action: {locationDataManager.update(walk)})
+//                        .buttonStyle(.bordered)
+//                        .tint(.gray)
+//                    Button("Stop", action: {
+//                        locationDataManager.stopCollecting(walk)
+//                        if context.hasChanges {
+//                            try? context.save()
+//                        }
+//                    })
+//                        .buttonStyle(.bordered)
+//                        .tint(.red)
                 }
                 .padding()
                 // Insert code here of what should happen when Location services are authorized
@@ -47,9 +94,9 @@ struct WalkDetail: View {
 //                Text("Latitude: \(locationDataManager.locationManager.location?.coordinate.latitude.description ?? "Error loading")")
 //                Text("Longitude: \(locationDataManager.locationManager.location?.coordinate.longitude.description ?? "Error loading")")
                 Text(locationDataManager.lastLocationString())
-                Text("Distance (m) \(walk.distance) Time \(walk.duration)")
+//                Text("Distance (m) \(walk.distance) Time \(walk.duration)")
                 Text("Steps (m) \(walk.steps) Points: \(locationDataManager.points)")
-                Text(locationDataManager.errorAlertString ?? "no msg")
+                Text(locationDataManager.errorAlertString ?? "--")
 
 Divider()
                 Map(
@@ -63,7 +110,7 @@ Divider()
                 .mapControls {
                     MapUserLocationButton()
                 }
-                .frame(width: 400, height: 300)
+                .frame(width: 400, height: 400)
                 Button("Reset the Walk", action: {
                     locationDataManager.stopCollecting(walk)
                     walk.waypoints = []
@@ -86,6 +133,7 @@ Divider()
                 ProgressView()
             }
         }
+        .font(.body)
         .onAppear(){
             locationDataManager.update(walk)
         }

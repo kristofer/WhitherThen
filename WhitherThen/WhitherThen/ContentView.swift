@@ -10,8 +10,14 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var walks: [Walk]
-
+    @Query(sort: \Walk.stopstamp, order: .reverse) private var walks: [Walk]
+    let walkListDateFormat = Date.FormatStyle()
+        .locale(Locale(identifier: "en_US"))
+        .weekday(.abbreviated)
+        .month(.abbreviated)
+        .day(.defaultDigits)
+        .hour().minute()
+    
     var body: some View {
         NavigationSplitView {
             List {
@@ -19,11 +25,13 @@ struct ContentView: View {
                     NavigationLink {
                         WalkDetail(walk: walk)
                     } label: {
-                        Text("Walk at \(walk.startstamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
+                        Text("\(walk.startstamp, format:  walkListDateFormat)")
+//Date.FormatStyle(date: walkDateFormat, time: .standard))")
                     }
                 }
                 .onDelete(perform: deleteItems)
             }
+            .navigationTitle("Walks")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
