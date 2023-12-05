@@ -28,6 +28,7 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
         latitudinalMeters: 500,
         longitudinalMeters: 500
     )
+    @Published var HACCU = 30.0
     
     /// Provides to create an instance of the CMMotionActivityManager.
     private let activityManager = CMMotionActivityManager()
@@ -114,15 +115,15 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
     func filterLocation(_ location: CLLocation) -> Bool{
         let age = -location.timestamp.timeIntervalSinceNow
         
-        if age > 10{
+        if age > 10 {
             return false
         }
         
-        if location.horizontalAccuracy < 0{
+        if location.horizontalAccuracy < 0 {
             return false
         }
         
-        if location.horizontalAccuracy > 30{
+        if location.horizontalAccuracy > HACCU {
             return false
         }
         
@@ -139,26 +140,26 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
             for location in locations {
                 if let newLocation = location as? CLLocation {
                     self.points += 1
-                    if walk.waypoints.isEmpty {
-                        walk.waypoints.append(Waypoint(loc: newLocation))
-                    }
                     if filterLocation(newLocation) {
+                        if walk.waypoints.isEmpty {
+                            walk.waypoints.append(Waypoint(loc: newLocation))
+                        }
                         self.errorAlertString = locString(loc: newLocation)
                         let waypoints = walk.waypoints.sorted { $0.timestamp < $1.timestamp } as [Waypoint]
-                        print("waypoints: \(waypoints.count)")
+                        //print("waypoints: \(waypoints.count)")
                         if let oldWaypoint = waypoints.last {
                             let oldLoc = oldWaypoint.makeLocation()
                             let delta: Double = newLocation.distance(from: oldLoc)
                             //print("DELTA: \(delta)")
-                            if delta > 3.0 {
+                            //if delta > 3.0 {
                                 walk.addDistance(delta)
                                 walk.addNewLocation(newLocation)
                                 self.lastLocation = newLocation
                                 self.errorAlertString?.append(" add ∆ \(delta)")
-                            } else {
-                                self.errorAlertString = " IGNORE ∆ \(delta)"
-                            }
-                            
+//                            } else {
+//                                self.errorAlertString = " IGNORE ∆ \(delta)"
+//                            }
+//                            
                         }
                         
                     }

@@ -14,6 +14,7 @@ struct WalkDetail: View {
     @EnvironmentObject var locationDataManager: LocationDataManager
     @Environment(\.modelContext) private var context
     @State private var isWalking = false
+    var horizAccus = [10.0, 30.0, 50.0, 75.0, 100.0, 200.0]
 
     let walkDateFormat = Date.FormatStyle()
         .locale(Locale(identifier: "en_US"))
@@ -110,18 +111,26 @@ Divider()
                 .mapControls {
                     MapUserLocationButton()
                 }
-                .frame(width: 400, height: 400)
-                Button("Reset the Walk", action: {
-                    locationDataManager.stopCollecting(walk)
-                    walk.waypoints = []
-                    walk.steps = 0
-                    if context.hasChanges {
-                        try? context.save()
+                .frame(width: 400, height: 450)
+                
+                Picker("HorizAccuracy", selection: $locationDataManager.HACCU) {
+                    ForEach(horizAccus, id: \.self) {
+                        Text("\($0)")
                     }
-                    locationDataManager.update(walk)
-                })
-                    .buttonStyle(.bordered)
-                    .tint(.red)
+                }
+
+                
+//                Button("Reset the Walk", action: {
+//                    locationDataManager.stopCollecting(walk)
+//                    walk.waypoints = []
+//                    walk.steps = 0
+//                    if context.hasChanges {
+//                        try? context.save()
+//                    }
+//                    locationDataManager.update(walk)
+//                })
+//                    .buttonStyle(.bordered)
+//                    .tint(.red)
 
             case .restricted, .denied:  // Location services currently unavailable.
                 // Insert code here of what should happen when Location services are NOT authorized
@@ -132,7 +141,9 @@ Divider()
             default:
                 ProgressView()
             }
+            Spacer()
         }
+        .padding()
         .font(.body)
         .onAppear(){
             locationDataManager.update(walk)
