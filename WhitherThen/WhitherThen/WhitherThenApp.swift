@@ -28,7 +28,7 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
         latitudinalMeters: 500,
         longitudinalMeters: 500
     )
-    @Published var HACCU = 30.0
+    @Published var HACCU = 50.0
     
     /// Provides to create an instance of the CMMotionActivityManager.
     private let activityManager = CMMotionActivityManager()
@@ -141,11 +141,14 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
                 if let newLocation = location as? CLLocation {
                     self.points += 1
                     if filterLocation(newLocation) {
-                        if walk.waypoints.isEmpty {
-                            walk.waypoints.append(Waypoint(loc: newLocation))
+                        if walk.waypoints == nil {
+                            walk.waypoints = []
+                        }
+                        if walk.waypoints!.isEmpty {
+                            walk.waypoints!.append(Waypoint(loc: newLocation))
                         }
                         self.errorAlertString = locString(loc: newLocation)
-                        let waypoints = walk.waypoints.sorted { $0.timestamp < $1.timestamp } as [Waypoint]
+                        let waypoints = walk.waypoints!.sorted { $0.timestamp < $1.timestamp } as [Waypoint]
                         //print("waypoints: \(waypoints.count)")
                         if let oldWaypoint = waypoints.last {
                             let oldLoc = oldWaypoint.makeLocation()
@@ -177,7 +180,7 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
     func polyLine() -> MKPolyline {
         if let walk = self.walk {
             var coordinates: [CLLocationCoordinate2D] = []
-            let sortedwaypts = walk.waypoints.sorted { $0.timestamp > $1.timestamp }
+            let sortedwaypts = walk.waypoints!.sorted { $0.timestamp > $1.timestamp }
             for waypt in sortedwaypts {
                 let coord = waypt.makeLocation().coordinate
                 coordinates.append(coord)
@@ -190,7 +193,7 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
     }
     
     func mapRegion(walk: Walk) -> MKCoordinateRegion {
-        if let startLoc = walk.waypoints.first {
+        if let startLoc = walk.waypoints?.first {
             let startLocation = startLoc.makeLocation()
             var minLatitude = startLocation.coordinate.latitude
             var maxLatitude = startLocation.coordinate.latitude
@@ -198,7 +201,7 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
             var minLongitude = startLocation.coordinate.longitude
             var maxLongitude = startLocation.coordinate.longitude
             
-            for loc in walk.waypoints {
+            for loc in walk.waypoints! {
                 let location = loc.makeLocation()
                 
                 if location.coordinate.latitude < minLatitude {

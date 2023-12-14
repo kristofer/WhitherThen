@@ -11,12 +11,6 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Walk.stopstamp, order: .reverse) private var walks: [Walk]
-    let walkListDateFormat = Date.FormatStyle()
-        .locale(Locale(identifier: "en_US"))
-        .weekday(.abbreviated)
-        .month(.abbreviated)
-        .day(.defaultDigits)
-        .hour().minute()
     
     var body: some View {
         NavigationSplitView {
@@ -25,20 +19,24 @@ struct ContentView: View {
                     NavigationLink {
                         WalkDetail(walk: walk)
                     } label: {
-                        Text("\(walk.startstamp, format:  walkListDateFormat)")
-//Date.FormatStyle(date: walkDateFormat, time: .standard))")
+                        WalkHeader(walk: walk)
                     }
                 }
                 .onDelete(perform: deleteItems)
             }
-            .navigationTitle("Walks")
+            .navigationTitle("History")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
                 }
                 ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Walk", systemImage: "plus")
+                    Button(action: {addItem(t: Walk(startstamp: Date(), kind: WALKTAG))}) {
+                        Label("Add Walk", systemImage: "figure.walk.circle")
+                    }
+                }
+                ToolbarItem {
+                    Button(action: {addItem(t: Walk(startstamp: Date(), kind: SAILTAG))}) {
+                        Label("Add Sail", systemImage: "sailboat.circle")
                     }
                 }
             }
@@ -46,14 +44,14 @@ struct ContentView: View {
             Text("Select a Walk")
         }
     }
-
-    private func addItem() {
+    
+    private func addItem(t: Walk) {
         withAnimation {
-            let newItem = Walk(startstamp: Date(), kind: WALKTAG)
-            modelContext.insert(newItem)
+            //let newItem = Walk(startstamp: Date(), kind: WALKTAG)
+            modelContext.insert(t)
         }
     }
-
+    
     private func deleteItems(offsets: IndexSet) {
         withAnimation {
             for index in offsets {

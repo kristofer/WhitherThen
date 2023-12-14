@@ -16,6 +16,7 @@
 		5C0A5F782B1525EF000192F2 /* WhitherThenUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0A5F772B1525EF000192F2 /* WhitherThenUITests.swift */; };
 		5C0A5F7A2B1525EF000192F2 /* WhitherThenUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0A5F792B1525EF000192F2 /* WhitherThenUITestsLaunchTests.swift */; };
 		5C0A5F872B152980000192F2 /* WalkDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0A5F862B152980000192F2 /* WalkDetail.swift */; };
+		5C6D2EE02B2B37DC00F10946 /* WalkHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6D2EDF2B2B37DC00F10946 /* WalkHeader.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,6 +51,7 @@
 		5C0A5F772B1525EF000192F2 /* WhitherThenUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhitherThenUITests.swift; sourceTree = "<group>"; };
 		5C0A5F792B1525EF000192F2 /* WhitherThenUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhitherThenUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		5C0A5F862B152980000192F2 /* WalkDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkDetail.swift; sourceTree = "<group>"; };
+		5C6D2EDF2B2B37DC00F10946 /* WalkHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkHeader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +105,7 @@
 				5C0A5F582B1525ED000192F2 /* WhitherThenApp.swift */,
 				5C0A5F5A2B1525ED000192F2 /* ContentView.swift */,
 				5C0A5F862B152980000192F2 /* WalkDetail.swift */,
+				5C6D2EDF2B2B37DC00F10946 /* WalkHeader.swift */,
 				5C0A5F5C2B1525ED000192F2 /* Walk.swift */,
 				5C0A5F5E2B1525EF000192F2 /* Assets.xcassets */,
 				5C0A5F632B1525EF000192F2 /* WhitherThen.entitlements */,
@@ -267,6 +270,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5C6D2EE02B2B37DC00F10946 /* WalkHeader.swift in Sources */,
 				5C0A5F5B2B1525ED000192F2 /* ContentView.swift in Sources */,
 				5C0A5F872B152980000192F2 /* WalkDetail.swift in Sources */,
 				5C0A5F5D2B1525ED000192F2 /* Walk.swift in Sources */,

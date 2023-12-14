@@ -35,13 +35,13 @@ struct WalkDetail: View {
             } label: {
                 Label {
                     if configuration.isOn {
-                        Text("Walking")
+                        Text("Recording")
                     } else {
-                        Text("Not Walking")
+                        Text("Stopped")
                     }
                 } icon: {
-                    Image(systemName: configuration.isOn ? "figure.walk.circle.fill" : "figure.walk.circle")
-                        .foregroundStyle(configuration.isOn ? Color.accentColor : .primary)
+                    Image(systemName: configuration.isOn ? "stop" : "play")
+                        .foregroundStyle(configuration.isOn ? .green : .red)
                         //.accessibility(label: Text(configuration.isOn ? "Walking" : "Not Walking"))
                         .imageScale(.large)
                 }
@@ -61,8 +61,8 @@ struct WalkDetail: View {
                     .font(.title3)
                 HStack {
                     Toggle("Walk", isOn: $isWalking)
-                        .onChange(of: isWalking) { value in
-                            if value {
+                        .onChange(of: isWalking) {
+                            if isWalking {
                                 locationDataManager.startCollecting(walk)
                             } else {
                                 locationDataManager.stopCollecting(walk)
@@ -72,38 +72,15 @@ struct WalkDetail: View {
                             }
                         }
                         .toggleStyle(CheckToggleStyle())
-//                    Button("Start", action: {locationDataManager.startCollecting(walk)})
-//                        .buttonStyle(.bordered)
-//                        .tint(.green)
-//                    Text("Pts: \(walk.waypoints.count) Walking: \(locationDataManager.walking)" as String)
-//                    Spacer()
-//                    Button("Draw", action: {locationDataManager.update(walk)})
-//                        .buttonStyle(.bordered)
-//                        .tint(.gray)
-//                    Button("Stop", action: {
-//                        locationDataManager.stopCollecting(walk)
-//                        if context.hasChanges {
-//                            try? context.save()
-//                        }
-//                    })
-//                        .buttonStyle(.bordered)
-//                        .tint(.red)
                 }
                 .padding()
-                // Insert code here of what should happen when Location services are authorized
                 Text("Your current location is:")
-//                Text("Latitude: \(locationDataManager.locationManager.location?.coordinate.latitude.description ?? "Error loading")")
-//                Text("Longitude: \(locationDataManager.locationManager.location?.coordinate.longitude.description ?? "Error loading")")
                 Text(locationDataManager.lastLocationString())
-//                Text("Distance (m) \(walk.distance) Time \(walk.duration)")
                 Text("Steps (m) \(walk.steps) Points: \(locationDataManager.points)")
                 Text(locationDataManager.errorAlertString ?? "--")
 
-Divider()
+                Divider()
                 Map(
-//                    coordinateRegion: $locationDataManager.region,
-//                    showsUserLocation: true,
-//                    userTrackingMode: .constant(.follow)
                 ) {
                     MapPolyline(locationDataManager.route ?? MKPolyline())
                         .stroke(.blue, lineWidth: 4)
@@ -112,26 +89,25 @@ Divider()
                     MapUserLocationButton()
                 }
                 .frame(width: 400, height: 450)
-                
-                Picker("HorizAccuracy", selection: $locationDataManager.HACCU) {
-                    ForEach(horizAccus, id: \.self) {
-                        Text("\($0)")
+                HStack{
+                    Picker("HorizAccuracy", selection: $locationDataManager.HACCU) {
+                        ForEach(horizAccus, id: \.self) {
+                            Text("\($0)")
+                        }
                     }
+                    Spacer()
+                    Button("Reset the Walk", action: {
+                        locationDataManager.stopCollecting(walk)
+                        walk.waypoints = []
+                        walk.steps = 0
+                        if context.hasChanges {
+                            try? context.save()
+                        }
+                        locationDataManager.update(walk)
+                    })
+                    .buttonStyle(.bordered)
+                    .tint(.red)
                 }
-
-                
-//                Button("Reset the Walk", action: {
-//                    locationDataManager.stopCollecting(walk)
-//                    walk.waypoints = []
-//                    walk.steps = 0
-//                    if context.hasChanges {
-//                        try? context.save()
-//                    }
-//                    locationDataManager.update(walk)
-//                })
-//                    .buttonStyle(.bordered)
-//                    .tint(.red)
-
             case .restricted, .denied:  // Location services currently unavailable.
                 // Insert code here of what should happen when Location services are NOT authorized
                 Text("Current location data was restricted or denied.")
@@ -147,6 +123,17 @@ Divider()
         .font(.body)
         .onAppear(){
             locationDataManager.update(walk)
+        }
+        .onDisappear() {
+            //print("disappearing and stopping recording")
+            locationDataManager.stopCollecting(walk)
+            if context.hasChanges {
+                try? context.save()
+            }
+
+//            if isWalking {
+//                isWalking.toggle()
+//            }
         }
     }
     

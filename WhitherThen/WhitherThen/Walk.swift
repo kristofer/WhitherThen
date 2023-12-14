@@ -19,14 +19,14 @@ let SAILTAG = "Sail"
 
 @Model
 final class Walk: ObservableObject {
-    @Attribute(.unique)
+    //@Attribute(.unique)
     var id: String = UUID().uuidString
-    var startstamp: Date
-    var stopstamp: Date
-    var distance: Double
-    var waypoints: [Waypoint]
-    var kind: String
-    var steps: Int
+    var startstamp: Date = Date()
+    var stopstamp: Date = Date()
+    var distance: Double = 0.0
+    var waypoints: [Waypoint]? = []
+    var kind: String = ""
+    var steps: Int = 0
     
     init(startstamp: Date, kind: String) {
         self.startstamp = startstamp
@@ -57,7 +57,7 @@ final class Walk: ObservableObject {
     
      func addNewLocation(_ location: CLLocation) {
          let newwpt = Waypoint(loc: location)
-         waypoints.append(newwpt)
+             waypoints!.append(newwpt)
      }
 
 }
@@ -65,10 +65,11 @@ final class Walk: ObservableObject {
 @Model
 final class Waypoint: ObservableObject {
     var id: String = UUID().uuidString
-    var timestamp: Date
-    var lat: Double
-    var lon: Double
-    var alt: Double
+    var timestamp: Date = Date()
+    var lat: Double = 0.0
+    var lon: Double = 0.0
+    var alt: Double = 0.0
+    var walk: Walk? = nil
     
     init(loc: CLLocation) {
         self.timestamp = loc.timestamp
