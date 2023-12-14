@@ -10,7 +10,7 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Walk.stopstamp, order: .reverse) private var walks: [Walk]
+    @Query(sort: \Walk.startstamp, order: .reverse) private var walks: [Walk]
     
     var body: some View {
         NavigationSplitView {
