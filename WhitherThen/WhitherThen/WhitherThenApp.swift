@@ -19,7 +19,8 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
     @Published var walking: Bool = false
     @Published var points: Int = 0
     @Published var lastLocation: CLLocation?
-    
+    @Published var location: CLLocation?
+
     @Published var errorAlertString: String?
     @Published var route: MKPolyline?
     @Published var region: MKCoordinateRegion = MKCoordinateRegion(
@@ -42,6 +43,8 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         //locationManager.distanceFilter = 15;
         locationManager.allowsBackgroundLocationUpdates = true
+        locationManager.requestLocation()
+
     }
     
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
@@ -66,6 +69,10 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
         }
     }
     
+    func requestLocation() {
+        self.locationManager.requestLocation()
+    }
+
     func startCollecting(_ walk: Walk) {
         self.walk = walk
         self.walking = true
@@ -134,6 +141,7 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        self.location = locations.first
         // RELIES on self.walk to be set...
         if let walk = self.walk {
             print("how many waypoints: \(locations.count)")
@@ -256,10 +264,34 @@ struct WhitherThenApp: App {
     }()
     
     @StateObject var locationDataManager = LocationDataManager()
-    
+    @StateObject var locationManager = LocationManager()
+    @StateObject var weatherManager = WeatherManager()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TabView {
+                WalkListView()
+                    .tabItem {
+                        Image(systemName: "map.fill")
+                        Text("Tracks")
+                    }
+                KnotzView()
+                    .environmentObject(locationManager)
+                    .tabItem {
+                        Image(systemName: "speedometer")
+                        Text("Knotz")
+                    }
+                LocalWeatherView()
+                    .task {
+                        locationDataManager.requestLocation()
+                        await weatherManager.getWeather(locationDataManager.location!)
+                    }
+                    .environmentObject(weatherManager)
+                    .tabItem {
+                        Image(systemName: "hurricane.circle")
+                        Text("Weather")
+                    }
+            }
         }
         .modelContainer(sharedModelContainer)
         .environmentObject(locationDataManager)

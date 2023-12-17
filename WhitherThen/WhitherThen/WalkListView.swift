@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftData
 
-struct ContentView: View {
+struct WalkListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Walk.startstamp, order: .reverse) private var walks: [Walk]
     
@@ -62,6 +62,6 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    WalkListView()
         .modelContainer(for: Walk.self, inMemory: true)
 }
