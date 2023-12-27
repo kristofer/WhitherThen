@@ -126,7 +126,7 @@ struct WalkDetail: View {
         }
         .onDisappear() {
             //print("disappearing and stopping recording")
-            locationDataManager.stopCollecting(walk)
+            //locationDataManager.stopCollecting(walk)
             if context.hasChanges {
                 try? context.save()
             }

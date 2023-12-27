@@ -12,13 +12,13 @@ import WeatherKit
 struct LocalWeatherView: View {
     @EnvironmentObject var locationDataManager: LocationDataManager
     @EnvironmentObject var weatherManager: WeatherManager
-
+    
     @State var region = MKCoordinateRegion(
         center: .init(latitude: 36.49183, longitude: -78.38987),
         span: .init(latitudeDelta: 0.2, longitudeDelta: 0.2)
     )
     @State private var showMarina = false
-
+    
     var body: some View {
         VStack(alignment: .leading) {
             Map(
@@ -33,19 +33,30 @@ struct LocalWeatherView: View {
             Text("Wind ") + Text(weatherManager.windDir)
             Text("Speed ") + Text(weatherManager.windSpd)
             Text("Gusts ") + Text(weatherManager.windGusts)
+            
             Divider()
-            Button("SteeleCreekMarina") {
-                showMarina.toggle()
+            HStack {
+                Button("Update Here") {
+                    locationDataManager.requestLocation()
+                }
+                .font(.body)
+                .buttonStyle(.bordered)
+                Button("SteeleCreekMarina") {
+                    showMarina.toggle()
+                }
+                .font(.body)
+                .buttonStyle(.bordered)
             }
-            .font(.body)
-            .buttonStyle(.bordered)
+        }
+        .onAppear(){
+            locationDataManager.requestLocation()
         }
         .font(.largeTitle)
         .foregroundColor(.green)
         .padding()
         .sheet(isPresented: $showMarina, content: SteeleCreekModalView.init)
     }
-
+    
 }
 
 struct SteeleCreekModalView: View {
@@ -55,17 +66,17 @@ struct SteeleCreekModalView: View {
     init() {}
     
     func getMarinaWeather() async {
-            do {
-                weatherManager.weather = try await Task.detached(priority: .userInitiated) {
-                    return try await WeatherService.shared.weather(for: .init(latitude: 36.49183, longitude: -78.38987))
-                    //36.49183, -78.38987 Coordinates for Steele Creek Marina
-                }.value
-            } catch {
-                fatalError("\(error)")
-            }
+        do {
+            weatherManager.weather = try await Task.detached(priority: .userInitiated) {
+                return try await WeatherService.shared.weather(for: .init(latitude: 36.49183, longitude: -78.38987))
+                //36.49183, -78.38987 Coordinates for Steele Creek Marina
+            }.value
+        } catch {
+            fatalError("\(error)")
         }
+    }
     
-     var body: some View {
+    var body: some View {
         VStack(alignment: .leading) {
             Text("Steele Creek Marina Weather")
             Divider()
@@ -88,7 +99,7 @@ struct SteeleCreekModalView: View {
         .task {
             await getMarinaWeather()
         }
-
+        
         Button("Dismiss Modal") {
             locationDataManager.requestLocation()
             dismiss()
@@ -99,7 +110,7 @@ struct SteeleCreekModalView: View {
 
 struct AnemometerView: View {
     @EnvironmentObject var weatherManager: WeatherManager
-
+    
     //shape for the indicator arrow
     struct Triangle: Shape {
         func path(in rect: CGRect) -> Path {
@@ -147,19 +158,19 @@ struct AnemometerView: View {
                     .fill(.black)
                     .shadow(radius: 10, x: -10, y: 10)
                 
-//                //STBD color
-//                Circle()
-//                    .trim(from: 0, to: 0.167)
-//                    .stroke(Color.green, lineWidth: width/20)
-//                    .padding((width/20)/2) //it gives half of the stroke width, so it is like a strokeBorder
-//                    .rotationEffect(.init(degrees: 270))
-//                
-//                //PORT color
-//                Circle()
-//                    .trim(from: 0, to: 0.167)
-//                    .stroke(Color.red, lineWidth: width/20)
-//                    .padding((width/20)/2)
-//                    .rotationEffect(.init(degrees: 210))
+                //                //STBD color
+                //                Circle()
+                //                    .trim(from: 0, to: 0.167)
+                //                    .stroke(Color.green, lineWidth: width/20)
+                //                    .padding((width/20)/2) //it gives half of the stroke width, so it is like a strokeBorder
+                //                    .rotationEffect(.init(degrees: 270))
+                //
+                //                //PORT color
+                //                Circle()
+                //                    .trim(from: 0, to: 0.167)
+                //                    .stroke(Color.red, lineWidth: width/20)
+                //                    .padding((width/20)/2)
+                //                    .rotationEffect(.init(degrees: 210))
                 
                 //indicator holder
                 Circle()
@@ -180,17 +191,17 @@ struct AnemometerView: View {
                     .stroke(Color.white, style: StrokeStyle(lineWidth: width/90))
                 //.scaleEffect(x: 0.95, y: 0.95)
                 
-//                // gauge numbers <--- here
-//                ForEach(GaugeMarker.labelSet()) { marker in
-//                    LabelView(marker: marker, paddingValue: CGFloat(geometry.size.width * 0.80))
-//                        .position(CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2))
-//                }
+                //                // gauge numbers <--- here
+                //                ForEach(GaugeMarker.labelSet()) { marker in
+                //                    LabelView(marker: marker, paddingValue: CGFloat(geometry.size.width * 0.80))
+                //                        .position(CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2))
+                //                }
                 // gauge numbers <---
-                 ForEach(GaugeMarker.labelSet()) { marker in
-                     LabelView(marker: marker, geometry: geometry)
-                         .position(CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2))
-                 }
-
+                ForEach(GaugeMarker.labelSet()) { marker in
+                    LabelView(marker: marker, geometry: geometry)
+                        .position(CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2))
+                }
+                
                 //indicator arrow
                 Triangle()
                     .fill(.white)
@@ -203,31 +214,31 @@ struct AnemometerView: View {
     }
 }
 
- 
- public struct LabelView: View {
-     let marker: GaugeMarker
-     let geometry: GeometryProxy
-     
-     @State var fontSize: CGFloat = 12
-     @State var paddingValue: CGFloat = 100
-     
-     public var body: some View {
-         VStack {
-             Text(marker.label)
-                 .foregroundColor(Color.white)
-                 //.font(Font.custom("Didot-Bold", size: fontSize))
-                 // make sure the text is upright, ie undo the rotation
-                 .rotationEffect(Angle(degrees: -marker.degrees))
-                 .padding(.bottom, paddingValue)
-         }
-         // place the VStack (with the Text) at the chosen angle around the clock
-         .rotationEffect(Angle(degrees: marker.degrees))
-             .onAppear {
-                 paddingValue = geometry.size.width * 0.7
-                 fontSize = geometry.size.width * 0.05
-             }
-     }
- }
+
+public struct LabelView: View {
+    let marker: GaugeMarker
+    let geometry: GeometryProxy
+    
+    @State var fontSize: CGFloat = 12
+    @State var paddingValue: CGFloat = 100
+    
+    public var body: some View {
+        VStack {
+            Text(marker.label)
+                .foregroundColor(Color.white)
+            //.font(Font.custom("Didot-Bold", size: fontSize))
+            // make sure the text is upright, ie undo the rotation
+                .rotationEffect(Angle(degrees: -marker.degrees))
+                .padding(.bottom, paddingValue)
+        }
+        // place the VStack (with the Text) at the chosen angle around the clock
+        .rotationEffect(Angle(degrees: marker.degrees))
+        .onAppear {
+            paddingValue = geometry.size.width * 0.7
+            fontSize = geometry.size.width * 0.05
+        }
+    }
+}
 
 struct GaugeMarker: Identifiable, Hashable {
     let id = UUID()
@@ -250,11 +261,11 @@ struct GaugeMarker: Identifiable, Hashable {
             GaugeMarker(degrees: 120, label: "120"),
             GaugeMarker(degrees: 150, label: "150"),
             GaugeMarker(degrees: 180, label: "S"),
-
-//            GaugeMarker(degrees: 240, label: "120"),
-//            GaugeMarker(degrees: 270, label: "90"),
-//            GaugeMarker(degrees: 300, label: "60"),
-//            GaugeMarker(degrees: 330, label: "30")
+            
+            //            GaugeMarker(degrees: 240, label: "120"),
+            //            GaugeMarker(degrees: 270, label: "90"),
+            //            GaugeMarker(degrees: 300, label: "60"),
+            //            GaugeMarker(degrees: 330, label: "30")
             GaugeMarker(degrees: 210, label: "210"),
             GaugeMarker(degrees: 240, label: "240"),
             GaugeMarker(degrees: 270, label: "W"),
