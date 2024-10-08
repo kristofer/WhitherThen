@@ -38,6 +38,7 @@ struct LocalWeatherView: View {
             HStack {
                 Button("Update Here") {
                     locationDataManager.requestLocation()
+                    //await weatherManager.getWeather(locationDataManager.location!)
                 }
                 .font(.body)
                 .buttonStyle(.bordered)
@@ -101,7 +102,10 @@ struct SteeleCreekModalView: View {
         }
         
         Button("Dismiss Modal") {
-            locationDataManager.requestLocation()
+            Task {
+                locationDataManager.requestLocation()
+                await weatherManager.getWeather(locationDataManager.location!)
+            }
             dismiss()
         }
     }

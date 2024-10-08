@@ -41,8 +41,11 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
         super.init()
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        //locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
         //locationManager.distanceFilter = 15;
         locationManager.allowsBackgroundLocationUpdates = true
+        locationManager.activityType = .otherNavigation
+        locationManager.pausesLocationUpdatesAutomatically = false
         locationManager.requestLocation()
 
     }
@@ -162,14 +165,14 @@ class LocationDataManager : NSObject, ObservableObject, CLLocationManagerDelegat
                             let oldLoc = oldWaypoint.makeLocation()
                             let delta: Double = newLocation.distance(from: oldLoc)
                             //print("DELTA: \(delta)")
-                            //if delta > 3.0 {
+                            if delta > 4.0 {
                                 walk.addDistance(delta)
                                 walk.addNewLocation(newLocation)
                                 self.lastLocation = newLocation
                                 self.errorAlertString?.append(" add ∆ \(delta)")
-//                            } else {
-//                                self.errorAlertString = " IGNORE ∆ \(delta)"
-//                            }
+                            } else {
+                                self.errorAlertString = " IGNORE ∆ \(delta)"
+                            }
 //                            
                         }
                         
